@@ -1,1 +1,154 @@
-greet
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #userDetails {
+            margin-top: 20px;
+        }
+        .form-input {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.0.0/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+    <h2>Bank App Login</h2>
+    <form id="loginForm">
+        <input type="text" id="username" class="form-input" placeholder="Username" required />
+        <input type="password" id="password" class="form-input" placeholder="Password" required />
+        <button type="submit">Login</button>
+    </form>
+
+    <div id="userDetails" style="display: none;">
+        <h3>Account Details</h3>
+        <p>Username: <span id="usernameDisplay"></span></p>
+        <p>Balance: $<span id="balance"></span></p>
+        <form id="transferForm">
+            <input type="text" id="toUsername" class="form-input" placeholder="Recipient Username" required />
+            <input type="number" id="amount" class="form-input" placeholder="Amount to Send" required />
+            <button type="submit">Transfer</button>
+        </form>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://your-project-url.supabase.co'; // Replace with your Supabase URL
+        const supabaseKey = 'your-anon-api-key';  // Replace with your Supabase anon API key
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            const userData = await loginUser(username, password);
+            if (userData) {
+                document.getElementById("usernameDisplay").textContent = userData.username;
+                document.getElementById("balance").textContent = userData.balance;
+                document.getElementById("userDetails").style.display = "block";
+            }
+        });
+
+        async function loginUser(username, password) {
+            const { data, error } = await supabase
+                .from('users')
+                .select('id, username, balance')
+                .eq('username', username)
+                .eq('password', password)
+                .single();
+
+            if (error) {
+                console.error('Login failed:', error.message);
+                return null;
+            }
+            return data;
+        }
+
+        document.getElementById("transferForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const fromUsername = document.getElementById("usernameDisplay").textContent;
+            const toUsername = document.getElementById("toUsername").value;
+            const amount = parseFloat(document.getElementById("amount").value);
+
+            const result = await sendMoney(fromUsername, toUsername, amount);
+            if (result) {
+                document.getElementById("balance").textContent = result.newBalance;
+                alert('Transfer Successful!');
+            } else {
+                alert('Transfer Failed!');
+            }
+        });
+
+        async function sendMoney(fromUser, toUser, amount) {
+            // Check if both users exist and have enough balance
+            const { data: fromUserData, error: fromError } = await supabase
+                .from('users')
+                .select('balance')
+                .eq('username', fromUser)
+                .single();
+
+            if (fromError) {
+                console.error('Error fetching from user data:', fromError.message);
+                return null;
+            }
+
+            if (fromUserData.balance < amount) {
+                console.error('Insufficient balance');
+                return null;
+            }
+
+            // Deduct amount from sender
+            const { error: deductError } = await supabase
+                .from('users')
+                .update({ balance: fromUserData.balance - amount })
+                .eq('username', fromUser);
+
+            if (deductError) {
+                console.error('Error deducting balance:', deductError.message);
+                return null;
+            }
+
+            // Add amount to receiver
+            const { data: toUserData, error: toError } = await supabase
+                .from('users')
+                .select('balance')
+                .eq('username', toUser)
+                .single();
+
+            if (toError) {
+                console.error('Error fetching to user data:', toError.message);
+                return null;
+            }
+
+            const { error: addError } = await supabase
+                .from('users')
+                .update({ balance: toUserData.balance + amount })
+                .eq('username', toUser);
+
+            if (addError) {
+                console.error('Error adding balance:', addError.message);
+                return null;
+            }
+
+            // Return new balance of the sender
+            return { newBalance: fromUserData.balance - amount };
+        }
+    </script>
+</body>
+</html>
