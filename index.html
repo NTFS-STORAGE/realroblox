@@ -46,10 +46,12 @@
     </div>
 
     <script>
-        const supabaseUrl = 'https://your-project-url.supabase.co'; // Replace with your Supabase URL
-        const supabaseKey = 'your-anon-api-key';  // Replace with your Supabase anon API key
+        // Replace with your Supabase URL and API key
+        const supabaseUrl = 'https://jukedtlcsktxrsbupnhs.supabase.co'; // Replace with your Supabase URL
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1a2VkdGxjc2t0eHJzYnVwbmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUxMzg5NzYsImV4cCI6MjA1MDcxNDk3Nn0.uSV4-aZj4MIxgLP6dw2Wlm4ozFikNCwB4AMuiIO7GSw';  // Replace with your Supabase anon API key
         const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
+        // Login form event listener
         document.getElementById("loginForm").addEventListener("submit", async (e) => {
             e.preventDefault();
 
@@ -64,6 +66,7 @@
             }
         });
 
+        // Function to handle user login
         async function loginUser(username, password) {
             const { data, error } = await supabase
                 .from('users')
@@ -74,11 +77,13 @@
 
             if (error) {
                 console.error('Login failed:', error.message);
+                alert('Login failed: ' + error.message);
                 return null;
             }
             return data;
         }
 
+        // Transfer form event listener
         document.getElementById("transferForm").addEventListener("submit", async (e) => {
             e.preventDefault();
 
@@ -95,6 +100,7 @@
             }
         });
 
+        // Function to handle money transfer
         async function sendMoney(fromUser, toUser, amount) {
             // Check if both users exist and have enough balance
             const { data: fromUserData, error: fromError } = await supabase
@@ -110,6 +116,7 @@
 
             if (fromUserData.balance < amount) {
                 console.error('Insufficient balance');
+                alert('Insufficient balance');
                 return null;
             }
 
