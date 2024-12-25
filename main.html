@@ -3,16 +3,210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Domain Ownership</title>
+    <title>Bank App with Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            text-align: center;
+            color: red;
+        }
+    </style>
 </head>
-<body style="background-color: #f0f0f0; text-align: center; font-family: Arial, sans-serif; margin: 0; padding: 0;">
-    <div style="padding: 50px;">
-        <h1 style="color: #333; text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3); font-size: 3em; margin-bottom: 10px;">
-            This Domain is Owned By
-        </h1>
-        <h2 style="color: #555; font-size: 2.5em; margin: 0;">
-            NTFS and Offsaler
-        </h2>
+<body>
+    <div class="container">
+        <h2>Bank App</h2>
+        <div id="loginForm">
+            <input type="text" id="username" placeholder="Username" />
+            <input type="password" id="password" placeholder="Password" />
+            <button onclick="login()">Login</button>
+            <button onclick="showRegisterForm()">Register</button>
+        </div>
+
+        <div id="registerForm" style="display: none;">
+            <input type="text" id="regUsername" placeholder="New Username" />
+            <input type="password" id="regPassword" placeholder="New Password" />
+            <button onclick="register()">Register</button>
+            <button onclick="showLoginForm()">Back to Login</button>
+        </div>
+
+        <div id="bankDashboard" style="display: none;">
+            <p>Welcome, <span id="currentUser"></span>!</p>
+            <p>Balance: $<span id="balance"></span></p>
+            <input type="number" id="sendAmount" placeholder="Amount to send" />
+            <input type="text" id="recipient" placeholder="Recipient Username" />
+            <button onclick="sendMoney()">Send Money</button>
+            <button onclick="logout()">Logout</button>
+        </div>
+
+        <p class="message" id="message"></p>
     </div>
+
+    <script type="module">
+        // Firebase Configuration (from your Firebase console)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzqta4_vBhGdvmRmqYFGHXYh3cmfCtykA",
+            authDomain: "robloxbankingreal.firebaseapp.com",
+            databaseURL: "https://robloxbankingreal-default-rtdb.firebaseio.com/",
+            projectId: "robloxbankingreal",
+            storageBucket: "robloxbankingreal.appspot.com",
+            messagingSenderId: "563609550424",
+            appId: "1:563609550424:web:53567bfd26443ffd9a542d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Helper functions to display forms and messages
+        function showLoginForm() {
+            document.getElementById("loginForm").style.display = "block";
+            document.getElementById("registerForm").style.display = "none";
+            document.getElementById("bankDashboard").style.display = "none";
+            clearMessage();
+        }
+
+        function showRegisterForm() {
+            document.getElementById("loginForm").style.display = "none";
+            document.getElementById("registerForm").style.display = "block";
+            clearMessage();
+        }
+
+        async function register() {
+            const username = document.getElementById("regUsername").value;
+            const password = document.getElementById("regPassword").value;
+
+            if (!username || !password) {
+                showMessage("Please fill in all fields.");
+                return;
+            }
+
+            const userRef = ref(database, 'users/' + username);
+            const snapshot = await get(userRef);
+
+            if (snapshot.exists()) {
+                showMessage("Username already exists.");
+            } else {
+                set(userRef, { password, balance: 100 });
+                showMessage("Registration successful. Please log in.", "green");
+                showLoginForm();
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            const userRef = ref(database, 'users/' + username);
+            const snapshot = await get(userRef);
+
+            if (snapshot.exists() && snapshot.val().password === password) {
+                loadDashboard(username, snapshot.val().balance);
+            } else {
+                showMessage("Invalid username or password.");
+            }
+        }
+
+        async function sendMoney() {
+            const amount = parseFloat(document.getElementById("sendAmount").value);
+            const recipient = document.getElementById("recipient").value;
+
+            const currentUser = document.getElementById("currentUser").textContent;
+            const currentUserRef = ref(database, 'users/' + currentUser);
+            const recipientRef = ref(database, 'users/' + recipient);
+
+            if (amount <= 0 || isNaN(amount)) {
+                showMessage("Enter a valid amount.");
+                return;
+            }
+
+            const [currentSnapshot, recipientSnapshot] = await Promise.all([
+                get(currentUserRef),
+                get(recipientRef)
+            ]);
+
+            if (!recipientSnapshot.exists()) {
+                showMessage("Recipient does not exist.");
+            } else if (currentSnapshot.val().balance < amount) {
+                showMessage("Insufficient balance.");
+            } else {
+                const updates = {};
+                updates['users/' + currentUser + '/balance'] = currentSnapshot.val().balance - amount;
+                updates['users/' + recipient + '/balance'] = recipientSnapshot.val().balance + amount;
+
+                await update(ref(database), updates);
+                loadDashboard(currentUser, currentSnapshot.val().balance - amount);
+                showMessage("Money sent successfully.", "green");
+            }
+        }
+
+        function loadDashboard(username, balance) {
+            document.getElementById("loginForm").style.display = "none";
+            document.getElementById("registerForm").style.display = "none";
+            document.getElementById("bankDashboard").style.display = "block";
+            document.getElementById("currentUser").textContent = username;
+            document.getElementById("balance").textContent = balance;
+            clearMessage();
+        }
+
+        function logout() {
+            showLoginForm();
+        }
+
+        function showMessage(message, color = "red") {
+            const messageElement = document.getElementById("message");
+            messageElement.textContent = message;
+            messageElement.style.color = color;
+        }
+
+        function clearMessage() {
+            showMessage("");
+        }
+    </script>
 </body>
 </html>
