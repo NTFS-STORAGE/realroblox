@@ -4,10 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login / Register</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <script src="firebase-config.js"></script>
+  <!-- Firebase SDK (no need to import Firebase script here, handled in firebase-config.js) -->
+  <script src="firebase-config.js" type="module"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -63,17 +61,17 @@
       const password = document.getElementById('password').value;
 
       try {
-        // Create a Firebase user with a random email (necessary for Firebase Auth)
-        const userCredential = await auth.createUserWithEmailAndPassword(`${username}@example.com`, password);
+        // Create a Firebase user with a fake email (required for Firebase Auth)
+        const userCredential = await createUserWithEmailAndPassword(auth, `${username}@example.com`, password);
         const user = userCredential.user;
 
-        // Save the username with the Firebase user ID (UID)
-        await db.collection("users").doc(user.uid).set({
+        // Save the username with the Firebase user ID (UID) in Firestore
+        await setDoc(doc(db, "users", user.uid), {
           username: username,
         });
 
         console.log("User registered:", user);
-        // Redirect to main page after successful registration
+        // Redirect to the main page after successful registration
         window.location.href = "main.html";
       } catch (error) {
         console.error("Error registering user:", error.message);
@@ -91,21 +89,22 @@
 
       try {
         // Query Firestore to find the UID associated with the username
-        const userSnapshot = await db.collection("users").where("username", "==", username).get();
+        const q = query(collection(db, "users"), where("username", "==", username));
+        const querySnapshot = await getDocs(q);
 
-        if (userSnapshot.empty) {
+        if (querySnapshot.empty) {
           alert("Username not found");
           return;
         }
 
-        const userDoc = userSnapshot.docs[0];
+        const userDoc = querySnapshot.docs[0];
         const uid = userDoc.id;
 
         // Now authenticate using Firebase with the fake email and real password
-        await auth.signInWithEmailAndPassword(`${username}@example.com`, password);
+        await signInWithEmailAndPassword(auth, `${username}@example.com`, password);
 
         console.log("User logged in successfully");
-        // Redirect to main page after successful login
+        // Redirect to the main page after successful login
         window.location.href = "main.html";
       } catch (error) {
         console.error("Error logging in:", error.message);
