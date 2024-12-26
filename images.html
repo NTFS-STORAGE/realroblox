@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Images</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: url('https://i.imgur.com/B0eXPHw.png') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        .container {
+            width: 800px;
+            margin: 0 auto;
+            text-align: center;
+            background-color: #2c1903;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .nav button {
+            background-color: #111;
+            color: #fff;
+            border: 2px solid #444;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .nav button:hover {
+            background-color: #333;
+        }
+
+        .image-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .image-grid img {
+            width: 512px;
+            height: 512px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            border: 5px solid #1a1a1a;
+        }
+
+        .image-grid img:hover {
+            transform: scale(1.05);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <button onclick="location.href='index.html'">HOME</button>
+            <button onclick="location.href='images.html'">IMAGES</button>
+            <button onclick="location.href='comments.html'">COMMENTS</button>
+        </div>
+
+        <div class="image-grid">
+            <img src="https://via.placeholder.com/512" alt="Image 1">
+            <img src="https://via.placeholder.com/512" alt="Image 2">
+            <img src="https://via.placeholder.com/512" alt="Image 3">
+            <img src="https://via.placeholder.com/512" alt="Image 4">
+        </div>
+    </div>
+</body>
+</html>
